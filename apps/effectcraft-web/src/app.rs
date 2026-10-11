@@ -8,6 +8,7 @@ use effectcraft_engine::Session;
 
 use crate::{api, audio, browse, diskcache, files, frames, persist, storage, worker};
 use effectcraft_ui_egui::EffectcraftApp;
+use effectcraft_ui_egui::theme::ThemeKind;
 use serde_json::json;
 use wasm_bindgen::prelude::*;
 
@@ -60,6 +61,26 @@ pub fn repaint() {
             c.request_repaint();
         }
     });
+}
+
+/// Switch the UI theme for this run: the settings change is applied on the app's next
+/// `logic` ([`EffectcraftApp::apply_prefs`]) but not saved, so the host's choice (SimpleHub's
+/// bridge) does not become the app's own preference.
+#[cfg_attr(not(feature = "simplehub"), allow(dead_code))]
+pub(crate) fn apply_theme(app: &mut EffectcraftApp, k: ThemeKind) {
+    set_theme_pref(&mut app.session, k);
+}
+
+fn set_theme_pref(session: &mut Session, k: ThemeKind) {
+    let name = match k {
+        ThemeKind::Dark => "dark",
+        ThemeKind::Darker => "darker",
+        ThemeKind::Light => "light",
+    };
+    if let Err(e) = session.prefs.set("appearance.theme", json!(name)) {
+        log::warn!("theme {name}: {e}");
+    }
+    session.prefs_changed();
 }
 
 /// Open a project or import media from table paths (picked or dropped files).
@@ -203,12 +224,15 @@ pub struct Boot {
     pub empty: bool,
     /// Show the start screen.
     pub home: bool,
+    /// The UI theme to start with, over the saved setting (SimpleHub's bridge `theme`); `None`
+    /// keeps the app's own (saved, else dark).
+    pub theme: Option<ThemeKind>,
 }
 
 /// Load browser storage, then start the eframe runner on `canvas`: shared by the standalone page
 /// ([`start`]) and SimpleHub (`start_simple_motion`).
 pub async fn run(canvas: web_sys::HtmlCanvasElement, boot: Boot) -> Result<eframe::WebRunner, JsValue> {
-    let Boot { empty, home } = boot;
+    let Boot { empty, home, theme } = boot;
     // Browser storage: settings, recent projects, imported media, saved projects, auto-saves and
     // the last session come back.
     let t0 = js_sys::Date::now();
@@ -259,6 +283,10 @@ pub async fn run(canvas: web_sys::HtmlCanvasElement, boot: Boot) -> Result<efram
                 }
                 let mut session = session();
                 session.load_settings();
+                if let Some(k) = theme {
+                    // Applied by the first frame's `apply_prefs`, before anything is drawn.
+                    set_theme_pref(&mut session, k);
+                }
                 let recovery = session.begin_recovery();
                 // `?empty`: a blank project; `?demo`: the demo project; otherwise the last visit's
                 // project (the demo on a first visit).
@@ -301,7 +329,7 @@ pub async fn start(canvas_id: String) -> Result<(), JsValue> {
     eframe::WebLogger::init(log::LevelFilter::Info).ok();
     let doc = web_sys::window().and_then(|w| w.document()).ok_or("no document")?;
     let canvas: web_sys::HtmlCanvasElement = doc.get_element_by_id(&canvas_id).ok_or("no canvas")?.dyn_into()?;
-    run(canvas, Boot { empty: query_flag("empty"), home: query_flag("home") }).await?;
+    run(canvas, Boot { empty: query_flag("empty"), home: query_flag("home"), theme: None }).await?;
     // Hide the loading message once the app runs.
     if let Some(el) = doc.get_element_by_id("loading") {
         el.remove();

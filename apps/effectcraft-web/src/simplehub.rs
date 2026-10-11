@@ -8,9 +8,15 @@
 //! types: `open` (a project), `footage` (media to import), `preset`, `animation`, `timeline`,
 //! `template`, `script`, `plugin`, `model`, `guides`, `data` or `file`. Whatever comes back is put
 //! in the file table and routed by extension (`.ecproj` opens a project, anything else imports).
+//!
+//! An optional `theme` string on the bridge (`"dark"` or `"light"`) picks the UI theme the app
+//! starts with; `MotionHandle::set_theme` switches it while the app runs. Both map onto the app's
+//! own themes (Settings ▸ Appearance: `"dark"` is the default dark theme, `"light"` the light one)
+//! without saving them as the user's preference.
 
 use std::cell::RefCell;
 
+use effectcraft_ui_egui::theme::ThemeKind;
 use wasm_bindgen::JsCast as _;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
@@ -53,19 +59,42 @@ impl MotionHandle {
     pub fn has_panicked(&self) -> bool {
         self.runner.has_panicked()
     }
+
+    /// Switches the running app to `"dark"` or `"light"` on its next frame. Other values are
+    /// ignored.
+    pub fn set_theme(&self, theme: &str) {
+        if let Some(k) = parse_theme(theme) {
+            // `post` runs this before the frame's `logic`, which applies the changed setting.
+            crate::post(move |app| crate::apply_theme(app, k));
+        }
+    }
 }
 
-/// Starts Simple Motion on `canvas`, with `bridge` providing open and save.
+/// `"dark"` is the app's default dark theme, `"light"` its light theme (the app's own names
+/// are accepted as well, e.g. `"darker"`).
+fn parse_theme(theme: &str) -> Option<ThemeKind> {
+    ThemeKind::from_name(theme.trim())
+}
+
+/// The bridge's optional `theme` property.
+fn bridge_theme(bridge: &JsValue) -> Option<ThemeKind> {
+    js_sys::Reflect::get(bridge, &JsValue::from_str("theme")).ok().and_then(|v| v.as_string()).and_then(|s| parse_theme(&s))
+}
+
+/// Starts Simple Motion on `canvas`, with `bridge` providing open and save. An optional `theme`
+/// property (`"dark"` or `"light"`) on the bridge picks the initial theme; without it the app
+/// keeps its own (the saved setting, else dark).
 #[wasm_bindgen]
 pub async fn start_simple_motion(canvas: web_sys::HtmlCanvasElement, bridge: JsValue) -> Result<MotionHandle, JsValue> {
     eframe::WebLogger::init(log::LevelFilter::Info).ok();
+    let theme = bridge_theme(&bridge);
     BRIDGE.with(|b| *b.borrow_mut() = Some(bridge));
     set_worker_glue(GLUE);
     // The workers instantiate this compiled module instead of fetching the .wasm again.
     if let Some(w) = web_sys::window() {
         let _ = js_sys::Reflect::set(&w, &JsValue::from_str("effectcraftModule"), &wasm_bindgen::module());
     }
-    let runner = crate::run(canvas, crate::Boot { empty: false, home: false }).await?;
+    let runner = crate::run(canvas, crate::Boot { empty: false, home: false, theme }).await?;
     Ok(MotionHandle { runner })
 }
 
