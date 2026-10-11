@@ -37,3 +37,7 @@ rayon = { workspace = true }
 image = { workspace = true }
 web-time = { workspace = true }
 exr = { workspace = true }
+
+[features]
+# SimpleHub build (Simple Motion): the bundled demo project is titled Simple Motion.
+simplehub = []

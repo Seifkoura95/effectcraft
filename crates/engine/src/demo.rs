@@ -11,7 +11,11 @@ use effectcraft_project::build::{self, Ids};
 use effectcraft_project::{Comp, ItemId, ItemKind, Layer, LayerSource, Project, PropGroup, Solid};
 use effectcraft_time::{FrameRate, Tick};
 
-pub const MAIN_COMP: &str = "EffectCraft Intro";
+/// The main composition. The `simplehub` feature builds the app as Simple Motion, and the demo
+/// presents as that.
+pub const MAIN_COMP: &str = if cfg!(feature = "simplehub") { "Simple Motion Intro" } else { "EffectCraft Intro" };
+/// The title the demo animates in.
+const TITLE: &str = if cfg!(feature = "simplehub") { "SIMPLE MOTION" } else { "EFFECTCRAFT" };
 pub const SHOWCASE_3D: &str = "3D Showcase";
 
 /// Seconds → the nearest frame of the demo's 29.97 fps comps (AE keeps times frame-aligned).
@@ -384,8 +388,8 @@ pub fn demo_project() -> Project {
     let mut title = text_layer(
         &mut p,
         &comp,
-        "EFFECTCRAFT",
-        TextDoc { text: "EFFECTCRAFT".into(), size: 148.0, style: "Bold".into(), tracking: 120.0, justify: Justify::Center, ..Default::default() },
+        TITLE,
+        TextDoc { text: TITLE.into(), size: 148.0, style: "Bold".into(), tracking: 120.0, justify: Justify::Center, ..Default::default() },
         [960.0, 560.0],
     );
     let mut next = p.next_id;
