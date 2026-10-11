@@ -19,6 +19,12 @@ let ready = null;
 let queue = Promise.resolve();
 
 async function handle(m) {
+  // The page is done with this worker (the app shut down or restarted): leave once the message
+  // before this one has finished, which releases the worker's WebGPU device in order.
+  if (m.type === "close") {
+    self.close();
+    return;
+  }
   if (m.type === "file") ec.workerFile(m.path, m.bytes);
   else if (m.type === "job") await ec.workerJob(m.json);
   else if (m.type === "frame") await ec.workerFrame(m.json);

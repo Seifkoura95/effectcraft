@@ -34,6 +34,8 @@ extern "C" {
     fn worker_run(id: f64, json: &str, files: js_sys::Array, base: &str, on_message: &js_sys::Function);
     #[wasm_bindgen(js_name = workerCancel)]
     fn worker_cancel(id: f64);
+    #[wasm_bindgen(js_name = workersShutdown)]
+    fn workers_shutdown();
     #[wasm_bindgen(js_name = workerStats)]
     pub fn stats() -> JsValue;
     #[wasm_bindgen(js_name = setJobWorkerGpu)]
@@ -118,6 +120,20 @@ fn end(id: u64) {
     wasm_bindgen_futures::spawn_local(async move {
         HANDLERS.with(|h| h.borrow_mut().remove(&id));
     });
+}
+
+thread_local! {
+    /// Handlers of jobs cut short by [`shutdown`]. A terminated worker's message may already be
+    /// queued; calling a dropped closure would throw, so these are kept (a few bytes per job).
+    static RETIRED: RefCell<Vec<OnMessage>> = const { RefCell::new(Vec::new()) };
+}
+
+/// The app is destroyed: terminate every job worker (and the frame workers, resetting the page's
+/// worker pools) and retire the running jobs' handlers.
+pub fn shutdown() {
+    workers_shutdown();
+    let handlers: Vec<OnMessage> = HANDLERS.with(|h| h.borrow_mut().drain().map(|(_, on)| on).collect());
+    RETIRED.with(|r| r.borrow_mut().extend(handlers));
 }
 
 // ---------------------------------------------------------------- worker side

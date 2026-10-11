@@ -503,4 +503,6 @@ for a project and `footage`, `preset`, `animation`, `timeline`, `template`, `scr
 media, auto-saves, the disk cache) works as in the standalone build. Under the feature the
 user-facing name is Simple Motion, the About dialog credits EffectCraft, and the ArtCraft mark,
 Discord and community links are left out (GitHub stays); the standalone `start` export and the
-device-lost overlay are not built.
+device-lost overlay are not built. `MotionHandle::destroy` stops the eframe runner and every job and
+frame worker and resets the worker pools, so a host that unmounts and mounts the app again on the
+same page starts clean (a worker outliving its instance would otherwise call a dropped closure).

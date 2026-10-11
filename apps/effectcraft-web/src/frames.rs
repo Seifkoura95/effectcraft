@@ -37,6 +37,8 @@ extern "C" {
     fn frame_worker_start(base: &str, on_message: &js_sys::Function, gpu: bool) -> u32;
     #[wasm_bindgen(js_name = frameWorkerPost)]
     fn frame_worker_post(index: u32, msg: &JsValue, transfer: &js_sys::Array);
+    #[wasm_bindgen(js_name = frameWorkerStop)]
+    fn frame_worker_stop(index: u32);
     #[wasm_bindgen(js_name = hasWebGpu)]
     pub(crate) fn has_web_gpu() -> bool;
 }
@@ -75,6 +77,10 @@ type OnMessage = Closure<dyn FnMut(u32, JsValue, JsValue, JsValue)>;
 thread_local! {
     static STATE: RefCell<State> = RefCell::new(State::default());
     static HANDLER: RefCell<Option<OnMessage>> = const { RefCell::new(None) };
+    /// Handlers of workers that were shut down. A message a terminated worker had already posted
+    /// may still arrive; calling a dropped closure would throw ("closure invoked recursively or
+    /// after being dropped"), so retired handlers are kept (a few bytes per restart).
+    static RETIRED: RefCell<Vec<OnMessage>> = const { RefCell::new(Vec::new()) };
     /// The worker's frame server (worker side).
     static SERVER: RefCell<Option<FrameServer>> = const { RefCell::new(None) };
     /// The worker's GPU device (worker side).
@@ -92,9 +98,28 @@ fn obj(pairs: &[(&str, JsValue)]) -> JsValue {
 /// The page's frame workers (see the module docs).
 pub struct WebFrames;
 
+/// Terminate every frame worker: a frame in flight fails, the workers' handler is retired (kept,
+/// see `RETIRED`), and nothing is left that could call back into a dropped closure. Called when
+/// the app is destroyed and before a restart.
+pub fn shutdown() {
+    let workers = STATE.with(|s| std::mem::take(&mut s.borrow_mut().workers));
+    for w in workers {
+        frame_worker_stop(w.index);
+        if let Some((_, done)) = w.busy {
+            done(Err("frame worker stopped".into()));
+        }
+    }
+    if let Some(on) = HANDLER.with(|h| h.borrow_mut().take()) {
+        RETIRED.with(|r| r.borrow_mut().push(on));
+    }
+}
+
 impl WebFrames {
     /// Start `n` frame workers; `gpu`: each opens its own WebGPU device where it can.
     pub fn start(n: usize, gpu: bool) -> WebFrames {
+        // A restart (a host that mounts the app again) must not leave the earlier workers calling
+        // a handler that is about to go.
+        shutdown();
         let on: OnMessage = Closure::new(|index: u32, json: JsValue, bytes: JsValue, error: JsValue| on_message(index, json, bytes, error));
         STATE.with(|s| {
             let mut s = s.borrow_mut();

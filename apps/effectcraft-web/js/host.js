@@ -525,6 +525,49 @@ export function frameWorkerPost(index, msg, transfer) {
   if (w) w.postMessage(msg, transfer ?? []);
 }
 
+/// Detach a worker and ask it to close itself once the message it is on is done (`worker.js`
+/// handles `close`). A worker holding a WebGPU device is not terminated mid-pass: killing it
+/// while a readback is in flight can wedge the browser's GPU process for every other device on
+/// the page (seen with a software WebGPU adapter), whereas closing from inside releases the
+/// device normally. Nothing it posts afterwards is heard.
+function closeWorker(w) {
+  if (!w) return;
+  w.onmessage = null;
+  w.onerror = null;
+  try {
+    w.postMessage({ type: "close" });
+  } catch {
+    w.terminate();
+  }
+}
+
+/// Stop a frame worker (the app shuts down or restarts). Its slot stays, so later workers keep
+/// distinct indexes.
+export function frameWorkerStop(index) {
+  const w = frameWorkers[index];
+  if (!w) return;
+  frameWorkers[index] = null;
+  closeWorker(w);
+}
+
+/// The app is destroyed (a host page unmounting it): stop every job and frame worker and reset
+/// the pools, so a later start on the same page begins with an empty pool and no worker can call
+/// back into the instance that is gone. A job still running is terminated, as cancelling it does.
+export function workersShutdown() {
+  for (const w of idle) closeWorker(w.worker);
+  idle.length = 0;
+  for (const w of running.values()) {
+    w.worker.onmessage = null;
+    w.worker.onerror = null;
+    w.worker.terminate();
+  }
+  running.clear();
+  jobGpu = null;
+  jobStats.length = 0;
+  for (const w of frameWorkers) closeWorker(w);
+  frameWorkers.length = 0;
+}
+
 // ------------------------------------------------------------------ media browser
 
 // Folders opened with the File System Access API (src/browse.rs): name → {handle, files: Map of

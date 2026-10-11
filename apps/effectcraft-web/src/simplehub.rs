@@ -42,8 +42,12 @@ pub struct MotionHandle {
 
 #[wasm_bindgen]
 impl MotionHandle {
+    /// Stops the app and its frame workers. A later `start_simple_motion` on the same page (the
+    /// host mounting again) starts fresh workers; the old ones must not outlive their handler.
     pub fn destroy(&self) {
         self.runner.destroy();
+        crate::frames::shutdown();
+        crate::worker::shutdown();
     }
 
     pub fn has_panicked(&self) -> bool {
