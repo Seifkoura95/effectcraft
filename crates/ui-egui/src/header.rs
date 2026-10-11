@@ -22,15 +22,18 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let cy = rect.center().y;
     let mut x = rect.min.x + if app.integrated_titlebar && !app.ui.show_menu_bar { 80.0 } else { 10.0 };
 
-    // Brand mark.
-    let brand = Rect::from_min_size(pos2(x, cy - 12.0), vec2(24.0, 24.0));
-    paint_logo(&p, brand);
-    let bresp = ui.interact(brand, egui::Id::new("brand"), Sense::click());
-    app.auto.add("header.about", brand, "About EffectCraft");
-    if bresp.on_hover_text("About EffectCraft").clicked() {
-        app.dialog = Some(Dialog::About);
+    // Brand mark (the ArtCraft mark is not shown in the SimpleHub build: About stays in Help ▸).
+    if !cfg!(feature = "simplehub") {
+        let brand = Rect::from_min_size(pos2(x, cy - 12.0), vec2(24.0, 24.0));
+        paint_logo(&p, brand);
+        let bresp = ui.interact(brand, egui::Id::new("brand"), Sense::click());
+        let about = format!("About {}", crate::APP_NAME);
+        app.auto.add("header.about", brand, &about);
+        if bresp.on_hover_text(about).clicked() {
+            app.dialog = Some(Dialog::About);
+        }
+        x += 32.0;
     }
-    x += 32.0;
 
     // Home.
     let home = Rect::from_min_size(pos2(x, cy - 13.0), vec2(26.0, 26.0));
@@ -174,22 +177,28 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let label = p.text(pos2(snap.max.x + 4.0, cy), Align2::LEFT_CENTER, "Snapping", Tokens::ui(12.0), t.text_dim);
     snapping_options(app, ui, Rect::from_min_size(pos2(label.max.x + 2.0, cy - 9.0), vec2(18.0, 18.0)));
 
-    // Right side: community buttons, workspaces.
+    // Right side: community buttons, workspaces. The SimpleHub build carries no ArtCraft links:
+    // only GitHub stays.
     let mut rx = rect.max.x - 10.0;
-    let discord = Rect::from_min_max(pos2(rx - 104.0, cy - 13.0), pos2(rx, cy + 13.0));
-    let dresp = ui.interact(discord, egui::Id::new("hdr-discord"), Sense::click());
-    let dc = Color32::from_rgb(0x58, 0x65, 0xf2);
-    p.rect_filled(discord, 13.0, if dresp.hovered() { dc.gamma_multiply(1.2) } else { dc });
-    icons::paint(&p, Rect::from_center_size(pos2(discord.min.x + 16.0, cy), vec2(14.0, 14.0)), Icon::Chat, Color32::WHITE);
-    p.text(pos2(discord.min.x + 28.0, cy), Align2::LEFT_CENTER, "Discord", Tokens::semibold(12.0), Color32::WHITE);
-    app.auto.add("header.discord", discord, "Join the ArtCraft Discord");
-    if dresp.on_hover_text("Join the ArtCraft community on Discord").clicked() {
-        let _ = app.session.execute("help.discord", json!({}));
+    if !cfg!(feature = "simplehub") {
+        let discord = Rect::from_min_max(pos2(rx - 104.0, cy - 13.0), pos2(rx, cy + 13.0));
+        let dresp = ui.interact(discord, egui::Id::new("hdr-discord"), Sense::click());
+        let dc = Color32::from_rgb(0x58, 0x65, 0xf2);
+        p.rect_filled(discord, 13.0, if dresp.hovered() { dc.gamma_multiply(1.2) } else { dc });
+        icons::paint(&p, Rect::from_center_size(pos2(discord.min.x + 16.0, cy), vec2(14.0, 14.0)), Icon::Chat, Color32::WHITE);
+        p.text(pos2(discord.min.x + 28.0, cy), Align2::LEFT_CENTER, "Discord", Tokens::semibold(12.0), Color32::WHITE);
+        app.auto.add("header.discord", discord, "Join the ArtCraft Discord");
+        if dresp.on_hover_text("Join the ArtCraft community on Discord").clicked() {
+            let _ = app.session.execute("help.discord", json!({}));
+        }
+        rx = discord.min.x - 6.0;
     }
-    rx = discord.min.x - 6.0;
-    for (id, icon, tip, cmd) in
-        [("hdr-github", Icon::Code, "EffectCraft on GitHub", "help.github"), ("hdr-web", Icon::Globe, "EffectCraft on getartcraft.com", "help.appPage")]
-    {
+    let github = format!("{} on GitHub", crate::APP_NAME);
+    let mut links = vec![("hdr-github", Icon::Code, github.as_str(), "help.github")];
+    if !cfg!(feature = "simplehub") {
+        links.push(("hdr-web", Icon::Globe, "EffectCraft on getartcraft.com", "help.appPage"));
+    }
+    for (id, icon, tip, cmd) in links {
         let r = Rect::from_min_max(pos2(rx - 26.0, cy - 13.0), pos2(rx, cy + 13.0));
         if widgets::icon_button(ui, r, icon, false, &t, egui::Id::new(id)).on_hover_text(tip).clicked() {
             let _ = app.session.execute(cmd, json!({}));

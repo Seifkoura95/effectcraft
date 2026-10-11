@@ -616,7 +616,7 @@ const COPY_COMMANDS: &[&str] =
 /// hold something: with nothing on it, the windowing layer sends no paste event for Ctrl+V.
 fn clipboard_note(s: &effectcraft_engine::Session) -> String {
     let st = &s.state;
-    let n = |n: usize, one: &str, many: &str| format!("EffectCraft: {n} {}", if n == 1 { one } else { many });
+    let n = |n: usize, one: &str, many: &str| format!("{}: {n} {}", crate::APP_NAME, if n == 1 { one } else { many });
     if st.clip_is_keys && !st.key_clipboard.is_empty() {
         n(st.key_clipboard.iter().map(|c| c.keys.len()).sum(), "keyframe", "keyframes")
     } else if !st.effect_clipboard.is_empty() {
@@ -624,7 +624,7 @@ fn clipboard_note(s: &effectcraft_engine::Session) -> String {
     } else if !st.contents_clipboard.is_empty() {
         n(st.contents_clipboard.len(), "shape item", "shape items")
     } else if st.link_clipboard.is_some() {
-        "EffectCraft: property links".into()
+        format!("{}: property links", crate::APP_NAME)
     } else {
         n(st.clipboard.len(), "layer", "layers")
     }
@@ -1210,7 +1210,13 @@ pub(crate) fn entry_label(app: &EffectcraftApp, e: &MenuEntry) -> String {
         }
         _ => effectcraft_engine::menus::entry_label(&app.session, e),
     };
-    crate::i18n::entry(app, e, shown)
+    crate::branded(&crate::i18n::entry(app, e, shown)).into_owned()
+}
+
+/// Whether a menu entry is shown: the SimpleHub build leaves out the entries that point at the
+/// ArtCraft community and sites (GitHub stays).
+pub(crate) fn entry_shown(e: &MenuEntry) -> bool {
+    !cfg!(feature = "simplehub") || !matches!(e.command.as_str(), "help.discord" | "help.website" | "help.appPage" | "help.onlineTutorials" | "help.sibling")
 }
 
 /// The entry's shortcut in the active keyboard shortcut preset.
@@ -1544,7 +1550,7 @@ pub fn menu_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui) {
         egui::MenuBar::new().ui(ui, |ui| {
             for node in effectcraft_engine::menus::menu_bar() {
                 if let MenuNode::Submenu { label, children } = node {
-                    let r = ui.menu_button(crate::i18n::label(app, "", label), |ui| {
+                    let r = ui.menu_button(crate::branded(crate::i18n::label(app, "", label)).into_owned(), |ui| {
                         ui.set_min_width(if label == "Effect" { 200.0 } else { 280.0 });
                         crate::widgets::menu_scroll(ui, |ui| menu_nodes(app, ui, children, &mut clicked));
                     });
@@ -1611,13 +1617,14 @@ fn menu_nodes(app: &mut EffectcraftApp, ui: &mut egui::Ui, nodes: &[MenuNode], c
             MenuNode::Submenu { label, children } => {
                 let ws = app.ui.workspace.clone();
                 let shown = crate::i18n::submenu(app, label, effectcraft_engine::menus::submenu_label(&app.session, label, &dyn_ctx(&ws, &[])));
-                ui.menu_button((gutter(false), shown.as_str()), |ui| {
+                let shown = crate::branded(&shown);
+                ui.menu_button((gutter(false), shown.as_ref()), |ui| {
                     ui.set_min_width(if children.len() > 30 { 200.0 } else { 240.0 });
                     crate::widgets::menu_scroll(ui, |ui| menu_nodes(app, ui, children, clicked));
                 });
             }
             MenuNode::Item(e) => {
-                if menu_entry(app, ui, e) {
+                if entry_shown(e) && menu_entry(app, ui, e) {
                     *clicked = Some((e.command.clone(), e.params.clone()));
                     ui.close();
                 }

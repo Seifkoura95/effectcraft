@@ -479,3 +479,28 @@ layer buffers through the disk store and the prefetch plan (`remote.rs`
 - A layer buffer is fetched from disk only after some worker missed it in a recent frame (the
   first frame after a reload renders its layers).
 - Cancelling an analysis drops its partial result (the worker is terminated).
+
+## Simple Motion (SimpleHub)
+
+`apps/effectcraft-web/simplehub.html` is a Trunk target that builds the app as **Simple Motion**
+for the SimpleHub web app, behind the `simplehub` cargo feature of `effectcraft-web` and
+`effectcraft-ui-egui`:
+
+```sh
+cd apps/effectcraft-web
+trunk build --release --public-url /apps/motion/ --filehash false --dist ../../dist/simplehub simplehub.html
+```
+
+The bundle is `effectcraft-web.js`, `effectcraft-web_bg.wasm`, `snippets/` (the browser glue
+`js/host.js`), `worker.js` and `audio-worklet.js`; the page `index.html` Trunk writes is not used.
+SimpleHub mounts the app itself: `start_simple_motion(canvas, bridge)` returns a `MotionHandle`
+(`destroy()`, `has_panicked()`), where `bridge` is `{ open(purpose): Promise<{name, bytes} | null>,
+save(name, bytes): Promise<void> }` (an optional `base` URL names the bundle's folder; by default it
+is the folder the glue was served from). File ▸ Open / Import and every save, export and render
+output go through the bridge instead of the browser's picker and downloads; `purpose` is `open`
+for a project and `footage`, `preset`, `animation`, `timeline`, `template`, `script`, `plugin`,
+`model`, `guides`, `data` or `file` otherwise. Browser storage (the session snapshot, imported
+media, auto-saves, the disk cache) works as in the standalone build. Under the feature the
+user-facing name is Simple Motion, the About dialog credits EffectCraft, and the ArtCraft mark,
+Discord and community links are left out (GitHub stays); the standalone `start` export and the
+device-lost overlay are not built.

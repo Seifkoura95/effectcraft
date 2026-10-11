@@ -32,8 +32,12 @@ pub(crate) fn set_worker() {
 }
 
 /// `rel` resolved against the page's URL (`worker.js`, `audio-worklet.js`); `""` = the page's
-/// folder.
+/// folder. Inside SimpleHub the bundle is served from its own folder, not the page's
+/// ([`simplehub::base_url`](crate::simplehub::base_url)).
 pub fn page_url(rel: &str) -> String {
+    #[cfg(feature = "simplehub")]
+    let href = crate::simplehub::base_url();
+    #[cfg(not(feature = "simplehub"))]
     let href = web_sys::window().and_then(|w| w.location().href().ok()).unwrap_or_default();
     web_sys::Url::new_with_base(if rel.is_empty() { "./" } else { rel }, &href).map(|u| u.href()).unwrap_or_else(|_| rel.to_string())
 }
@@ -158,20 +162,32 @@ pub fn session() -> Session {
     }
 }
 
+/// Ask for files: SimpleHub's bridge (`open(purpose)`), else the browser's `<input type=file>`.
+/// The files arrive later: they are read into the table, then opened or imported.
+fn pick(exts: &[&str], project: bool) {
+    #[cfg(feature = "simplehub")]
+    {
+        let purpose = if project { "open" } else { crate::simplehub::purpose_for(exts) };
+        crate::simplehub::open(purpose, |paths| post(move |app| open_or_import(app, paths)));
+    }
+    #[cfg(not(feature = "simplehub"))]
+    {
+        let accept = if project { ".ecproj".to_string() } else { exts.iter().map(|e| format!(".{e}")).collect::<Vec<_>>().join(",") };
+        if let Err(e) = files::pick(&accept, !project, |paths| post(move |app| open_or_import(app, paths))) {
+            log::warn!("file picker: {e:?}");
+        }
+    }
+}
+
 /// Browser file pickers in place of the desktop's file dialogs.
 fn install_hooks(app: &mut EffectcraftApp) {
     app.hooks.pick_files = Some(Box::new(|exts: &[&str]| {
-        let accept = exts.iter().map(|e| format!(".{e}")).collect::<Vec<_>>().join(",");
-        if let Err(e) = files::pick(&accept, true, |paths| post(move |app| open_or_import(app, paths))) {
-            log::warn!("file picker: {e:?}");
-        }
-        // the import happens when the browser hands over the files
+        pick(exts, false);
+        // the import happens when the host hands over the files
         Vec::new()
     }));
     app.hooks.pick_open_project = Some(Box::new(|| {
-        if let Err(e) = files::pick(".ecproj", false, |paths| post(move |app| open_or_import(app, paths))) {
-            log::warn!("file picker: {e:?}");
-        }
+        pick(&["ecproj"], true);
         None
     }));
     // Saving downloads the file: the chosen name is all a "save dialog" needs.
@@ -180,14 +196,19 @@ fn install_hooks(app: &mut EffectcraftApp) {
     app.hooks.audio_devices = Some(Box::new(|| vec!["Browser default output".into()]));
 }
 
-/// Entry point (called by the page's bootstrap script once the wasm module is instantiated).
-#[wasm_bindgen]
-pub async fn start(canvas_id: String) -> Result<(), JsValue> {
-    eframe::WebLogger::init(log::LevelFilter::Info).ok();
-    let doc = web_sys::window().and_then(|w| w.document()).ok_or("no document")?;
-    let canvas: web_sys::HtmlCanvasElement = doc.get_element_by_id(&canvas_id).ok_or("no canvas")?.dyn_into()?;
-    let empty = query_flag("empty");
-    let home = query_flag("home");
+/// How the app starts: what the standalone page's URL asked for (`?empty`, `?home`), or SimpleHub's
+/// defaults (the last session, or the demo project on a first visit).
+pub struct Boot {
+    /// A blank project; the session is neither restored nor recorded.
+    pub empty: bool,
+    /// Show the start screen.
+    pub home: bool,
+}
+
+/// Load browser storage, then start the eframe runner on `canvas`: shared by the standalone page
+/// ([`start`]) and SimpleHub (`start_simple_motion`).
+pub async fn run(canvas: web_sys::HtmlCanvasElement, boot: Boot) -> Result<eframe::WebRunner, JsValue> {
+    let Boot { empty, home } = boot;
     // Browser storage: settings, recent projects, imported media, saved projects, auto-saves and
     // the last session come back.
     let t0 = js_sys::Date::now();
@@ -223,12 +244,17 @@ pub async fn start(canvas_id: String) -> Result<(), JsValue> {
                     }));
                     // The canvas can't present any more (#225): the page says so over it and
                     // offers a reload, which brings the session back when browser storage keeps it.
+                    // Inside SimpleHub the host owns the page: the loss is logged for it.
                     let lost = gpu_failures.clone();
                     let kept = !empty && persist::backend() != "memory";
                     rs.device.set_device_lost_callback(move |reason, message| {
                         let message = format!("GPU device lost ({reason:?}): {message}");
                         lost.report(&message, true);
-                        show_device_lost(&message, kept);
+                        if cfg!(feature = "simplehub") {
+                            log::error!("{message}");
+                        } else {
+                            show_device_lost(&message, kept);
+                        }
                     });
                 }
                 let mut session = session();
@@ -264,6 +290,18 @@ pub async fn start(canvas_id: String) -> Result<(), JsValue> {
             }),
         )
         .await?;
+    Ok(runner)
+}
+
+/// Entry point (called by the page's bootstrap script once the wasm module is instantiated).
+/// Not in the SimpleHub build, which the host mounts through `start_simple_motion`.
+#[cfg(not(feature = "simplehub"))]
+#[wasm_bindgen]
+pub async fn start(canvas_id: String) -> Result<(), JsValue> {
+    eframe::WebLogger::init(log::LevelFilter::Info).ok();
+    let doc = web_sys::window().and_then(|w| w.document()).ok_or("no document")?;
+    let canvas: web_sys::HtmlCanvasElement = doc.get_element_by_id(&canvas_id).ok_or("no canvas")?.dyn_into()?;
+    run(canvas, Boot { empty: query_flag("empty"), home: query_flag("home") }).await?;
     // Hide the loading message once the app runs.
     if let Some(el) = doc.get_element_by_id("loading") {
         el.remove();

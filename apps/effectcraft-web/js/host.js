@@ -293,6 +293,21 @@ export function setJobWorkerGpu(on) {
   jobWorkerGpu = !!on;
 }
 
+// The wasm-bindgen glue's file name next to `worker.js`: `cargo xtask web` names it
+// `effectcraft_web.js`; the Trunk build for SimpleHub names it `effectcraft-web.js`.
+let glue = "effectcraft_web.js";
+
+export function setWorkerGlue(name) {
+  glue = name;
+}
+
+/// The folder the glue and the .wasm were served from. wasm-bindgen places this module at
+/// `snippets/<crate>-<hash>/js/host.js`, three levels below them. A host page that mounts the app
+/// (SimpleHub) resolves `worker.js` and `audio-worklet.js` against it, not against its own URL.
+export function moduleBase() {
+  return new URL("../../../", import.meta.url).href;
+}
+
 function spawn(base) {
   const worker = new Worker(new URL("worker.js", base), { type: "module", name: "effectcraft-worker" });
   const w = { worker, files: new Map(), ready: null, gpu: null };
@@ -306,7 +321,7 @@ function spawn(base) {
     };
     worker.onerror = (e) => rej(new Error(e.message || "worker failed to start"));
   });
-  worker.postMessage({ type: "init", module: self.effectcraftModule ?? null, base, gpu: jobWorkerGpu });
+  worker.postMessage({ type: "init", module: self.effectcraftModule ?? null, base, glue, gpu: jobWorkerGpu });
   return w;
 }
 
@@ -389,7 +404,7 @@ export function frameWorkerStart(base, onMessage, gpu) {
     onMessage(index, undefined, undefined, String(e.message || "frame worker failed"));
     worker.terminate();
   };
-  worker.postMessage({ type: "init", module: self.effectcraftModule ?? null, base, frames: true, gpu: !!gpu });
+  worker.postMessage({ type: "init", module: self.effectcraftModule ?? null, base, glue, frames: true, gpu: !!gpu });
   frameWorkers.push(worker);
   return index;
 }

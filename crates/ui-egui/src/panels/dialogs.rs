@@ -203,7 +203,7 @@ fn about(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
     let mut close = false;
     let mut cmd: Option<&str> = None;
     let tab_id = egui::Id::new("about_tab");
-    modal(ctx, "About EffectCraft", vec2(680.0, 520.0), t, |ui| {
+    modal(ctx, &format!("About {}", crate::APP_NAME), vec2(680.0, 520.0), t, |ui| {
         let mut tab = ui.data_mut(|d| d.get_temp::<usize>(tab_id)).unwrap_or(0);
         ui.horizontal(|ui| {
             for (i, (label, id)) in ABOUT_TABS.iter().enumerate() {
@@ -252,6 +252,25 @@ fn about(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
 
 /// The About tab: logo, version, blurb and community links.
 fn about_main(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, cmd: &mut Option<&'static str>) {
+    if cfg!(feature = "simplehub") {
+        // SimpleHub build. EffectCraft is MIT OR Apache-2.0; the licence asks for attribution and
+        // the ArtCraft marks are left out (they are not open source).
+        let (r, _) = ui.allocate_exact_size(vec2(ui.available_width(), 96.0), Sense::hover());
+        let p = ui.painter();
+        p.rect_filled(r, 10.0, Color32::from_rgb(0x1b, 0x22, 0x3c));
+        p.text(r.min + vec2(18.0, 34.0), Align2::LEFT_CENTER, crate::APP_NAME, Tokens::semibold(24.0), Color32::WHITE);
+        p.text(r.min + vec2(18.0, 62.0), Align2::LEFT_CENTER, format!("Version {}", env!("CARGO_PKG_VERSION")), Tokens::ui(12.0), t.text_dim);
+        ui.add_space(12.0);
+        ui.label("Motion graphics and visual effects for SimpleHub: compositions, keyframes, effects and rendering in the browser.");
+        ui.add_space(10.0);
+        ui.label(
+            egui::RichText::new("Simple Motion is built on EffectCraft, an open source project by storytold, under the MIT and Apache 2.0 licences.")
+                .color(t.text_dim),
+        );
+        let r = ui.hyperlink_to("github.com/storytold/effectcraft", effectcraft_engine::links::GITHUB);
+        app.auto.add("about.help.github", r.rect, "github.com/storytold/effectcraft");
+        return;
+    }
     let (r, _) = ui.allocate_exact_size(vec2(ui.available_width(), 96.0), Sense::hover());
     let p = ui.painter();
     p.rect_filled(r, 10.0, Color32::from_rgb(0x1b, 0x22, 0x3c));

@@ -40,6 +40,8 @@ pub mod files;
 pub mod frames;
 #[cfg(target_arch = "wasm32")]
 pub mod persist;
+#[cfg(all(target_arch = "wasm32", feature = "simplehub"))]
+pub mod simplehub;
 #[cfg(target_arch = "wasm32")]
 pub mod storage;
 #[cfg(target_arch = "wasm32")]

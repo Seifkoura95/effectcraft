@@ -68,6 +68,7 @@ fn file_name(path: &str) -> &str {
     path.rsplit('/').next().filter(|n| !n.is_empty()).unwrap_or("effectcraft-output")
 }
 
+#[cfg_attr(feature = "simplehub", allow(dead_code))]
 fn mime(name: &str) -> &'static str {
     match name.rsplit('.').next().unwrap_or("").to_ascii_lowercase().as_str() {
         "png" => "image/png",
@@ -82,7 +83,15 @@ fn mime(name: &str) -> &'static str {
     }
 }
 
+/// Offer `data` as a download named `name`. Inside SimpleHub the host keeps the file instead
+/// (`bridge.save`): nothing is downloaded.
+#[cfg(feature = "simplehub")]
+pub fn download(name: &str, data: &[u8]) -> Result<(), JsValue> {
+    crate::simplehub::save(name, data)
+}
+
 /// Offer `data` as a download named `name`.
+#[cfg(not(feature = "simplehub"))]
 pub fn download(name: &str, data: &[u8]) -> Result<(), JsValue> {
     let doc = web_sys::window().and_then(|w| w.document()).ok_or("no document")?;
     let parts = js_sys::Array::of1(&js_sys::Uint8Array::from(data));
@@ -238,6 +247,7 @@ pub fn zip_store(entries: &[(String, Arc<[u8]>)]) -> Vec<u8> {
 }
 
 /// Show the browser's file picker; `then` gets the picked files' table paths once they are read.
+#[cfg_attr(feature = "simplehub", allow(dead_code))]
 pub fn pick(accept: &str, multiple: bool, then: impl FnOnce(Vec<String>) + 'static) -> Result<(), JsValue> {
     let doc = web_sys::window().and_then(|w| w.document()).ok_or("no document")?;
     let input: web_sys::HtmlInputElement = doc.create_element("input")?.dyn_into()?;

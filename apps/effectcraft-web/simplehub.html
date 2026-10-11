@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Simple Motion</title>
+  <!-- SimpleHub build of effectcraft-web. Shipped: the generated .js and _bg.wasm, the `snippets/`
+       folder (js/host.js), `worker.js` and `audio-worklet.js`; SimpleHub mounts the app itself through
+       `start_simple_motion(canvas, bridge)`. Build from this directory with:
+       trunk build --release --public-url /apps/motion/ --filehash false --dist ../../dist/simplehub simplehub.html -->
+  <link data-trunk rel="rust" data-cargo-features="simplehub" data-wasm-opt="2" data-weak-refs />
+  <link data-trunk rel="copy-file" href="web/worker.js" />
+  <link data-trunk rel="copy-file" href="web/audio-worklet.js" />
+</head>
+<body></body>
+</html>

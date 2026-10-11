@@ -41,3 +41,7 @@ effectcraft-host = { workspace = true }
 [build-dependencies]
 serde_json = { workspace = true }
 toml = "1"
+
+[features]
+# SimpleHub build: user-facing name "Simple Motion", About dialog credits EffectCraft, no ArtCraft marks or community links.
+simplehub = []

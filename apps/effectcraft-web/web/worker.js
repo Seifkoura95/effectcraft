@@ -9,8 +9,12 @@
 //   it; a frame then takes several passes, awaiting the device's readbacks in between.
 // Messages are handled one at a time, in order: a frame awaiting its readbacks finishes before
 // the next message (a project sync, the next request) is looked at.
-import init, * as ec from "./effectcraft_web.js";
+//
+// The wasm-bindgen glue is imported from `init.base` under the name `init.glue`
+// (`effectcraft_web.js` from `cargo xtask web`; `effectcraft-web.js` from the Trunk build that
+// SimpleHub mounts), so one worker script serves both layouts.
 
+let ec = null;
 let ready = null;
 let queue = Promise.resolve();
 
@@ -24,7 +28,9 @@ self.onmessage = (e) => {
   const m = e.data;
   if (m.type === "init") {
     ready = (async () => {
-      await init({ module_or_path: m.module ?? new URL("effectcraft_web_bg.wasm", m.base) });
+      const glue = m.glue ?? "effectcraft_web.js";
+      ec = await import(new URL(glue, m.base));
+      await ec.default({ module_or_path: m.module ?? new URL(glue.replace(/\.js$/, "_bg.wasm"), m.base) });
       ec.workerInit();
       if (m.frames) await ec.workerFrameInit(!!m.gpu);
       else await ec.workerJobInit(!!m.gpu);

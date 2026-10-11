@@ -32,6 +32,21 @@ use std::sync::mpsc::{Receiver, Sender};
 
 pub use control::ControlRequest;
 use dock::PanelKind;
+
+/// The name shown to the user in the title, the start screen, menus and the About dialog.
+/// The `simplehub` feature builds the app as Simple Motion inside SimpleHub.
+pub const APP_NAME: &str = if cfg!(feature = "simplehub") { "Simple Motion" } else { "EffectCraft" };
+
+/// A UI string with the product name swapped for [`APP_NAME`]: a no-op outside the `simplehub`
+/// feature. Menu labels come from the engine's tree and the translation catalogs, which name
+/// EffectCraft in every language, so the name is swapped after translation rather than in the key.
+pub fn branded(s: &str) -> std::borrow::Cow<'_, str> {
+    if cfg!(feature = "simplehub") && s.contains("EffectCraft") {
+        std::borrow::Cow::Owned(s.replace("EffectCraft", APP_NAME))
+    } else {
+        std::borrow::Cow::Borrowed(s)
+    }
+}
 use effectcraft_engine::Session;
 use effectcraft_engine::project::ItemId;
 use effectcraft_engine::render::RenderOpts;
@@ -1408,7 +1423,8 @@ impl EffectcraftApp {
         self.handle_events(&ctx);
         panels::unsaved::on_close_requested(self, &ctx);
         let title = panels::unsaved::window_title(self);
-        if title != self.window_title {
+        // Inside SimpleHub the page owns its title.
+        if title != self.window_title && !cfg!(feature = "simplehub") {
             ctx.send_viewport_cmd(egui::ViewportCommand::Title(title.clone()));
             self.window_title = title;
         }
