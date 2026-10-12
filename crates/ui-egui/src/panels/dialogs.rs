@@ -267,6 +267,10 @@ fn about_main(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, cmd: &mut
             egui::RichText::new("Simple Motion is built on EffectCraft, an open source project by storytold, under the MIT and Apache 2.0 licences.")
                 .color(t.text_dim),
         );
+        ui.label(
+            egui::RichText::new("Not affiliated with or endorsed by Adobe, Microsoft, Autodesk or Avid. Other product names are trademarks of their respective owners.")
+                .color(t.text_dim),
+        );
         let r = ui.hyperlink_to("github.com/storytold/effectcraft", effectcraft_engine::links::GITHUB);
         app.auto.add("about.help.github", r.rect, "github.com/storytold/effectcraft");
         return;

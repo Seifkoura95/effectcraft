@@ -38,7 +38,7 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::NotVector => write!(f, "not a PDF, Illustrator or EPS file"),
+            Error::NotVector => write!(f, "not a PDF, AI or EPS file"),
             Error::Encrypted => write!(f, "encrypted PDF files are not supported"),
             Error::NoPages => write!(f, "the PDF has no pages"),
             Error::PageOutOfRange(n) => write!(f, "the PDF has no page {}", n + 1),

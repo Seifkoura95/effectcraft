@@ -182,12 +182,20 @@ fn capabilities(s: &mut Session, _: &Value) -> Result<Value> {
         "expressions": s.expr.is_some(),
         "scripting": s.script.is_some(),
         "gpu": s.accel.is_some(),
-        "parity": {
-            "target": "Adobe After Effects 2026",
-            "summary": PARITY,
-            "doc": "docs/parity.md",
-        },
+        "parity": parity(),
     }))
+}
+
+/// The parity summary. The SimpleHub build names no third-party product in its output.
+fn parity() -> Value {
+    if cfg!(feature = "simplehub") {
+        return Value::Null;
+    }
+    json!({
+        "target": "Adobe After Effects 2026",
+        "summary": PARITY,
+        "doc": "docs/parity.md",
+    })
 }
 
 /// The headline of `docs/parity.md` (kept in sync by hand at each audit).

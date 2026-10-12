@@ -61,6 +61,6 @@ fn export_and_reimport_timeline_commands() {
 fn premiere_menu_entries_keep_after_effects_labels() {
     let entries = crate::menus::entries();
     let find = |cmd: &str| entries.iter().find(|(_, e)| e.command == cmd).map(|(p, e)| (p.join(" > "), e.label.clone()));
-    assert_eq!(find("file.exportTimeline"), Some(("File > Export".into(), "Adobe Premiere Pro Project...".into())));
-    assert_eq!(find("file.importTimeline"), Some(("File > Import".into(), "Adobe Premiere Pro Project...".into())));
+    assert_eq!(find("file.exportTimeline"), Some(("File > Export".into(), "Timeline Interchange File...".into())));
+    assert_eq!(find("file.importTimeline"), Some(("File > Import".into(), "Timeline Interchange File...".into())));
 }

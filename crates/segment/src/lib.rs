@@ -86,7 +86,7 @@ pub const MOBILE_SAM: ModelInfo = ModelInfo {
     task: Task::Mask,
     name: "MobileSAM",
     description: "Segment Anything distilled to a 5M-parameter TinyViT encoder (C. Zhang et al., 2023). Turns your strokes into a clean matte and tidies every propagated frame.",
-    authors: "Chaoning Zhang et al. (MobileSAM), building on Meta AI's Segment Anything and Microsoft's TinyViT",
+    authors: "Chaoning Zhang et al. (MobileSAM), building on Meta AI's Segment Anything and the TinyViT backbone",
     licence: "Apache-2.0",
     licence_url: "https://github.com/ChaoningZhang/MobileSAM/blob/master/LICENSE",
     homepage: "https://github.com/ChaoningZhang/MobileSAM",

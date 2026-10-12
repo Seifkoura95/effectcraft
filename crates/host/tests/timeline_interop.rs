@@ -170,5 +170,5 @@ fn export_prerenders_and_reimports_the_same_pixels() {
     }
     // Native .prproj is refused with a pointer to the XML route.
     let e = s.execute("file.importTimeline", json!({"path": "/x/a.prproj"})).unwrap_err().to_string();
-    assert!(e.contains("Final Cut Pro XML"), "{e}");
+    assert!(e.contains("FCP 7 XML"), "{e}");
 }

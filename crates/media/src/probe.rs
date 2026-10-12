@@ -97,6 +97,8 @@ pub(crate) fn footage_from_info(path: &str, info: &filmcraft_media::MediaInfo) -
         (None, Some(a)) => a.codec.clone(),
         _ => String::new(),
     };
+    // The decoder names DNxHD / DNxHR after their vendor; the codec name alone is shown.
+    let codec = codec.strip_prefix("Avid ").map(str::to_string).unwrap_or(codec);
     Footage {
         path: path.to_string(),
         kind,

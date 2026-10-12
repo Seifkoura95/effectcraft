@@ -31,10 +31,10 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::NotPsd => write!(f, "not a Photoshop document"),
-            Error::Truncated => write!(f, "truncated Photoshop document"),
-            Error::Unsupported(s) => write!(f, "unsupported Photoshop feature: {s}"),
-            Error::Invalid(s) => write!(f, "invalid Photoshop document: {s}"),
+            Error::NotPsd => write!(f, "not a PSD document"),
+            Error::Truncated => write!(f, "truncated PSD document"),
+            Error::Unsupported(s) => write!(f, "unsupported PSD feature: {s}"),
+            Error::Invalid(s) => write!(f, "invalid PSD document: {s}"),
         }
     }
 }

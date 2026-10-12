@@ -181,11 +181,11 @@ fn global_light(s: &mut Session, p: &Value) -> Result<Value> {
 
 fn no_psd_styles(s: &Session) -> std::result::Result<(), String> {
     has_layers(s)?;
-    Err("no Photoshop layer styles to convert (only layers imported from PSD files carry them)".into())
+    Err("no PSD layer styles to convert (only layers imported from PSD files carry them)".into())
 }
 
 fn convert(_: &mut Session, _: &Value) -> Result<Value> {
-    Err(EngineError::Other("no Photoshop layer styles to convert".into()))
+    Err(EngineError::Other("no PSD layer styles to convert".into()))
 }
 
 fn list(s: &mut Session, p: &Value) -> Result<Value> {

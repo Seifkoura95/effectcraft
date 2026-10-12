@@ -945,7 +945,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Run Script",
             [],
             None,
-            "{code (JavaScript: app, app.project, CompItem, Layer, Property… like After Effects scripting), name?, console? (Script Console context)} → {ok, result, output, error: {message, line, column} | null}",
+            "{code (JavaScript: app, app.project, CompItem, Layer, Property… like familiar compositor scripting), name?, console? (Script Console context)} → {ok, result, output, error: {message, line, column} | null}",
             always,
             script_run
         ),

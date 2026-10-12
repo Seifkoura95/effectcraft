@@ -982,7 +982,7 @@ pub fn specs() -> Vec<EffectSpec> {
             "ec.color.equalize",
             "Equalize",
             vec![
-                p("style", "Equalize", Value::Enum(0), popup(&["RGB", "Brightness", "Photoshop Style"])),
+                p("style", "Equalize", Value::Enum(0), popup(&["RGB", "Brightness", "Classic Style"])),
                 p("amount", "Amount to Equalize", num(100.0), slider(0.0, 100.0, 0.0, 100.0, 1)),
             ],
             equalize,

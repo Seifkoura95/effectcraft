@@ -23,3 +23,7 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 effectcraft-render = { workspace = true }
+
+[features]
+# SimpleHub build: files this crate writes name Simple Motion as the software that made them.
+simplehub = []

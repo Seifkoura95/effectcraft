@@ -27,7 +27,7 @@ fn import_timeline(s: &mut Session, p: &Value) -> Result<Value> {
     if path.to_ascii_lowercase().ends_with(".prproj") {
         return Err(bad(
             CMD,
-            "native Premiere Pro projects (.prproj) are not supported: in Premiere Pro use File ▸ Export ▸ Final Cut Pro XML… and import the .xml",
+            "native .prproj projects are not supported: export the sequence as FCP 7 XML from the editing app and import the .xml",
         ));
     }
     let format = format_p(p, CMD)?;
@@ -177,7 +177,7 @@ fn export_timeline(s: &mut Session, p: &Value) -> Result<Value> {
     let mut warnings = out.warnings.clone();
     warnings.extend(errors.iter().map(|e| format!("pre-render failed: {e}")));
     s.toast(match format {
-        TimelineFormat::Fcp7Xml => format!("Exported {path} (Final Cut Pro XML; import it in Premiere Pro with File ▸ Import)"),
+        TimelineFormat::Fcp7Xml => format!("Exported {path} (FCP 7 XML; open it with the editing app's XML import)"),
         _ => format!("Exported {path} ({})", format.label()),
     });
     Ok(json!({
@@ -207,19 +207,19 @@ pub fn specs() -> Vec<CommandSpec> {
     vec![
         cmd!(
             "file.importTimeline",
-            "Adobe Premiere Pro Project...",
+            "Timeline Interchange File...",
             ["File", "Import"],
             None,
-            "{path (.xml Final Cut Pro XML from Premiere Pro or .fcpxml .otio .edl .aaf .omf), format?: auto|xml|fcpxml|otio|edl|aaf|omf, edlFrameRate?: number}",
+            "{path (.xml FCP 7 XML or .fcpxml .otio .edl .aaf .omf), format?: auto|xml|fcpxml|otio|edl|aaf|omf, edlFrameRate?: number}",
             always,
             import_timeline
         ),
         cmd!(
             "file.exportTimeline",
-            "Adobe Premiere Pro Project...",
+            "Timeline Interchange File...",
             ["File", "Export"],
             None,
-            "{comp?, path (Final Cut Pro XML .xml for Premiere Pro or .fcpxml .otio .edl .aaf .omf), format?: xml|fcpxml|otio|edl|aaf|omf, prerender?: none|unsupported|all, precomps?: nest|prerender}",
+            "{comp?, path (FCP 7 XML .xml or .fcpxml .otio .edl .aaf .omf), format?: xml|fcpxml|otio|edl|aaf|omf, prerender?: none|unsupported|all, precomps?: nest|prerender}",
             has_comp,
             export_timeline
         ),

@@ -157,7 +157,7 @@ pub fn open_form(app: &mut EffectcraftApp, id: &str, p: &Value) -> bool {
     let (title, fields): (String, Vec<Field>) = match id {
         // Photoshop files: Import Kind (Footage / Composition / – Retain Layer Sizes).
         "file.import" if !has(p, &["importAs"]) && is_layered(p) => (
-            "Import Photoshop File".into(),
+            "Import PSD File".into(),
             vec![Field::choice(
                 "importAs",
                 "Import Kind",
@@ -167,7 +167,7 @@ pub fn open_form(app: &mut EffectcraftApp, id: &str, p: &Value) -> bool {
         ),
         // PDF / Illustrator files: Import Kind and the page.
         "file.import" if !has(p, &["importAs", "page"]) && is_pdf(p) => (
-            "Import PDF / Illustrator File".into(),
+            "Import PDF / AI File".into(),
             vec![
                 Field::choice("importAs", "Import Kind", &[("Footage", json!("footage")), ("Composition", json!("composition"))], 0),
                 Field::num("page", "Page", 1.0),
@@ -446,7 +446,7 @@ pub fn open_form(app: &mut EffectcraftApp, id: &str, p: &Value) -> bool {
                     Field::choice(
                         "colorEngine",
                         "Color engine",
-                        &[("Adobe-style built-in", json!("adobe")), ("OCIO (built-in ACES config)", json!("ocio"))],
+                        &[("Standard built-in", json!("adobe")), ("OCIO (built-in ACES config)", json!("ocio"))],
                         usize::from(st.color_engine == effectcraft_engine::project::ColorEngine::Ocio),
                     ),
                     Field::choice(
@@ -564,15 +564,15 @@ pub fn open_form(app: &mut EffectcraftApp, id: &str, p: &Value) -> bool {
             let dir = s.path.as_deref().and_then(|p| std::path::Path::new(p).parent()).map(|d| d.to_path_buf()).unwrap_or_default();
             let path = dir.join(format!("{name}.xml")).to_string_lossy().to_string();
             (
-                "Export Adobe Premiere Pro Project".into(),
+                "Export Timeline Interchange File".into(),
                 vec![
-                    Field::note("note", "Writes Final Cut Pro XML (.xml), which Premiere Pro opens with File ▸ Import. Native .prproj files are not written."),
+                    Field::note("note", "Writes FCP 7 XML (.xml), which editing apps open through their XML import. Native .prproj files are not written."),
                     Field::save_path("path", "File", &path),
                     Field::choice(
                         "format",
                         "Format",
                         &[
-                            ("Final Cut Pro XML (.xml) – Premiere Pro", json!("xml")),
+                            ("FCP 7 XML (.xml)", json!("xml")),
                             ("FCPXML (.fcpxml)", json!("fcpxml")),
                             ("OpenTimelineIO (.otio)", json!("otio")),
                             ("CMX 3600 EDL (.edl, V1 only)", json!("edl")),
@@ -585,7 +585,7 @@ pub fn open_form(app: &mut EffectcraftApp, id: &str, p: &Value) -> bool {
                         "prerender",
                         "Pre-render (ProRes 4444)",
                         &[
-                            ("Layers Premiere can't show (text, shapes, effects…)", json!("unsupported")),
+                            ("Layers an editing app can't show (text, shapes, effects…)", json!("unsupported")),
                             ("All layers", json!("all")),
                             ("None (leave them out)", json!("none")),
                         ],
@@ -855,7 +855,7 @@ mod tests {
         assert!(matches!(app.dialog, Some(Dialog::Form)));
         let f = &app.dialog_state.form;
         assert_eq!(f.command, "file.exportTimeline");
-        assert!(matches!(&f.fields[0].kind, FieldKind::Note(t) if t.contains("Final Cut Pro XML (.xml)")));
+        assert!(matches!(&f.fields[0].kind, FieldKind::Note(t) if t.contains("FCP 7 XML (.xml)")));
         let dir = std::env::temp_dir().join(format!("effectcraft-ui-premiere-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("Spot.xml").to_string_lossy().to_string();

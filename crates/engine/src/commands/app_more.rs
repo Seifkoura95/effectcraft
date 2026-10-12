@@ -142,7 +142,7 @@ fn replace_with_layered_comp(s: &mut Session, p: &Value) -> Result<Value> {
     let item = item.ok_or_else(|| bad("file.replaceWithLayeredComp", "select a layered footage item"))?;
     let path = match s.project.item(item).map(|i| &i.kind) {
         Some(ItemKind::Footage(f)) if f.codec == "PSD" || f.path.to_ascii_lowercase().ends_with(".psd") => f.path.clone(),
-        _ => return Err(bad("file.replaceWithLayeredComp", "the item is not layered footage (a Photoshop file)")),
+        _ => return Err(bad("file.replaceWithLayeredComp", "the item is not layered footage (a PSD file)")),
     };
     let bytes = s.services.read_file(&path).map_err(|e| EngineError::Other(format!("cannot read {path}: {e}")))?;
     grouped(s, "Replace Footage", |s| {
@@ -306,7 +306,7 @@ pub const IMPORT_FORMATS: &[&str] = &[
     "TIFF",
     "BMP",
     "OpenEXR",
-    "Photoshop (PSD)",
+    "PSD",
     "SVG",
     "WAV",
     "AIFF",
@@ -337,7 +337,7 @@ pub fn system_report(s: &Session) -> Value {
         issues.push("Export is not available in this build.".to_string());
     }
     json!({
-        "app": format!("EffectCraft {}", env!("CARGO_PKG_VERSION")),
+        "app": format!("{} {}", crate::links::APP_NAME, env!("CARGO_PKG_VERSION")),
         "os": crate::sysinfo::os_version(),
         "arch": std::env::consts::ARCH,
         "cpu": crate::sysinfo::cpu_name(),

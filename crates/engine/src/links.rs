@@ -1,7 +1,9 @@
 //! Community and project links (shown in Help ▸, the About dialog, the start screen and the
 //! header's Discord button).
 
-pub const APP_NAME: &str = "EffectCraft";
+/// The product name written into files the engine makes (template manifests, system reports);
+/// Simple Motion in the `simplehub` build.
+pub const APP_NAME: &str = if cfg!(feature = "simplehub") { "Simple Motion" } else { "EffectCraft" };
 pub const APP_SLUG: &str = "effectcraft";
 pub const DISCORD: &str = "https://discord.gg/artcraft";
 pub const WEBSITE: &str = "https://getartcraft.com";

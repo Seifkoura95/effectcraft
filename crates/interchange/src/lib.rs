@@ -85,7 +85,7 @@ impl TimelineFormat {
 
     pub fn label(self) -> &'static str {
         match self {
-            TimelineFormat::Fcp7Xml => "Final Cut Pro XML (Premiere Pro)",
+            TimelineFormat::Fcp7Xml => "FCP 7 XML (xmeml)",
             TimelineFormat::Fcpxml => "FCPXML",
             TimelineFormat::Otio => "OpenTimelineIO",
             TimelineFormat::Edl => "CMX 3600 EDL",
@@ -154,7 +154,7 @@ impl TimelineFormat {
 pub enum Error {
     #[error("{0}")]
     Interchange(#[from] filmcraft_interchange::Error),
-    #[error("not a timeline document (expected Final Cut Pro XML, FCPXML, OpenTimelineIO or EDL)")]
+    #[error("not a timeline document (expected FCP 7 XML, FCPXML, OpenTimelineIO or EDL)")]
     UnknownFormat,
     #[error("no composition {0}")]
     NoComp(u64),

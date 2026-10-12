@@ -30,6 +30,10 @@
 
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
+/// The software name written into rendered files (WebM muxing/writing app) and render logs;
+/// Simple Motion in the `simplehub` build.
+pub const SOFTWARE: &str = if cfg!(feature = "simplehub") { "Simple Motion" } else { "EffectCraft" };
+
 mod encode;
 mod hevc_av1;
 mod out;

@@ -58,4 +58,4 @@ web-sys = { version = "0.3", features = [
 [features]
 # Simple Motion inside SimpleHub: no page bootstrap (`start`), the host mounts the app through
 # `start_simple_motion(canvas, bridge)` and File ▸ Open / Import and every save go through the bridge.
-simplehub = ["effectcraft-ui-egui/simplehub"]
+simplehub = ["effectcraft-ui-egui/simplehub", "effectcraft-export/simplehub"]

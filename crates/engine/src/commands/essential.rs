@@ -847,7 +847,7 @@ fn export_template(s: &mut Session, p: &Value) -> Result<Value> {
     let manifest = json!({
         "format": TEMPLATE_FORMAT,
         "version": TEMPLATE_VERSION,
-        "generator": format!("EffectCraft {}", env!("CARGO_PKG_VERSION")),
+        "generator": format!("{} {}", crate::links::APP_NAME, env!("CARGO_PKG_VERSION")),
         "name": name,
         "comp": cid.0,
         "compName": comp_name,

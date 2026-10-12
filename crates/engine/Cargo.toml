@@ -40,4 +40,4 @@ exr = { workspace = true }
 
 [features]
 # SimpleHub build (Simple Motion): the bundled demo project is titled Simple Motion.
-simplehub = []
+simplehub = ["effectcraft-lottie/simplehub"]

@@ -220,7 +220,7 @@ pub fn specs() -> Vec<CommandSpec> {
     vec![
         cmd!(
             "comp.saveFrameAsPsd",
-            "Photoshop Layers...",
+            "Layered PSD...",
             ["Composition", "Save Frame As"],
             None,
             "{path (.psd), comp?, time?, scale?} → a layered PSD: one layer per visible comp layer (blend mode, opacity) + the merged frame",

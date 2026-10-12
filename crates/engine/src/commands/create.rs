@@ -134,14 +134,14 @@ fn create(s: &mut Session, p: &Value) -> Result<Value> {
             }
             "editableText" => {
                 let Some((f, sl)) = footage.and_then(|f| f.layer.clone().map(|l| (f, l))) else {
-                    skipped.push(format!("{}: not a Photoshop layer", src.name));
+                    skipped.push(format!("{}: not a PSD layer", src.name));
                     continue;
                 };
                 let bytes = s.services.read_file(&f.path).map_err(|e| EngineError::Other(format!("cannot read {}: {e}", f.path)))?;
                 let psd = effectcraft_psd::Psd::parse(bytes).map_err(|e| EngineError::Other(e.to_string()))?;
                 let id = s.edit("Convert to Editable Text", None, |proj, st| {
                     let l = crate::psd_import::editable_text(proj, &comp, &src, &psd, sl.index as usize)
-                        .ok_or_else(|| bad("layer.create", format!("{}: the Photoshop layer has no text", src.name)))?;
+                        .ok_or_else(|| bad("layer.create", format!("{}: the PSD layer has no text", src.name)))?;
                     let id = l.id;
                     let c = proj.comp_mut(cid).ok_or(EngineError::NoComp)?;
                     let at = c.layers.iter().position(|x| x.id == lid).ok_or(EngineError::NoComp)?;
